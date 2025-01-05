@@ -1,0 +1,231 @@
+!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>澎湖縣戶政受理案件</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .chart-container {
+            width: 60%;
+            margin: 20px auto;
+        }
+        .table-container {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            text-align: center;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        select {
+            margin: 20px;
+            padding: 5px;
+        }
+        .chart {
+            width: 400px;
+            height: 400px;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>澎湖縣戶政受理案件</h1>
+    <div style="text-align: center;">
+        <label for="regionSelect">選擇區域：</label>
+        <select id="regionSelect" onchange="updateRegion()">
+            <option value="magong">馬公市</option>
+            <option value="xiyu">西嶼鄉</option>
+            <option value="huxi">湖西鄉</option>
+            <option value="baisha">白沙鄉</option>
+            <option value="wangan">望安鄉</option>
+            <option value="qimei">七美鄉</option>
+        </select>
+
+        <label for="chartTypeSelect">選擇圖表類型：</label>
+        <select id="chartTypeSelect" onchange="updateChartType()">
+            <option value="bar">柱狀圖</option>
+            <option value="pie">圓餅圖</option>
+        </select>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="chartCanvas" class="chart"></canvas>
+    </div>
+
+    <div class="table-container">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>類別</th>
+                    <th>案件數量</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        const regionData = {
+            magong: {
+                labels: ["發給國民身分證", "填發戶口名簿", "核發戶籍謄本", "辦理印鑑"],
+                data: [7714, 10127, 21749, 6270]
+            },
+            xiyu: {
+                labels: ["發給國民身分證", "填發戶口名簿", "核發戶籍謄本", "辦理印鑑"],
+                data: [5123, 8450, 18450, 5120]
+            },
+            huxi: {
+                labels: ["發給國民身分證", "填發戶口名簿", "核發戶籍謄本", "辦理印鑑"],
+                data: [6345, 7230, 17320, 4345]
+            },
+            baisha: {
+                labels: ["發給國民身分證", "填發戶口名簿", "核發戶籍謄本", "辦理印鑑"],
+                data: [4890, 6105, 15045, 3980]
+            },
+            wangan: {
+                labels: ["發給國民身分證", "填發戶口名簿", "核發戶籍謄本", "辦理印鑑"],
+                data: [2320, 3400, 7980, 2100]
+            },
+            qimei: {
+                labels: ["發給國民身分證", "填發戶口名簿", "核發戶籍謄本", "辦理印鑑"],
+                data: [1200, 1800, 4300, 1050]
+            }
+        };
+
+        let currentRegion = "magong";
+        let currentChartType = "bar";
+        let chart = null;
+
+        const ctx = document.getElementById("chartCanvas").getContext("2d");
+
+        function createChart(type) {
+            const data = regionData[currentRegion];
+            const chartData = {
+                labels: data.labels,
+                datasets: [
+                    {
+                        label: "案件數量",
+                        data: data.data,
+                        backgroundColor: [
+                            "rgba(255, 99, 132, 0.2)",
+                            "rgba(54, 162, 235, 0.2)",
+                            "rgba(255, 206, 86, 0.2)",
+                            "rgba(75, 192, 192, 0.2)"
+                        ],
+                        borderColor: [
+                            "rgba(255, 99, 132, 1)",
+                            "rgba(54, 162, 235, 1)",
+                            "rgba(255, 206, 86, 1)",
+                            "rgba(75, 192, 192, 1)"
+                        ],
+                        borderWidth: 1
+                    }
+                ]
+            };
+
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: type,
+                data: type === "pie" ? {
+                    labels: data.labels,
+                    datasets: [chartData.datasets[0]]
+                } : chartData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: "top",
+                        },
+                        title: {
+                            display: true,
+                            text: `${getRegionName(currentRegion)} 案件數據圖表`
+                        },
+                        datalabels: {
+                            display: type === "pie",
+                            formatter: (value, context) => {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(2) + '%';
+                                return percentage;
+                            },
+                            color: '#000',
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: type === "bar" ? {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "類別"
+                            }
+                        },
+                        y: {
+                            beginAtZero: true
+                        }
+                    } : {}
+                },
+                plugins: type === "pie" ? [ChartDataLabels] : []
+            });
+
+            updateTable();
+        }
+
+        function updateRegion() {
+            currentRegion = document.getElementById("regionSelect").value;
+            createChart(currentChartType);
+        }
+
+        function updateChartType() {
+            currentChartType = document.getElementById("chartTypeSelect").value;
+            createChart(currentChartType);
+        }
+
+        function updateTable() {
+            const data = regionData[currentRegion];
+            const tableBody = document.querySelector("#dataTable tbody");
+            tableBody.innerHTML = "";
+            data.labels.forEach((label, index) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `<td>${label}</td><td>${data.data[index]}</td>`;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function getRegionName(region) {
+            const names = {
+                magong: "馬公市",
+                xiyu: "西嶼鄉",
+                huxi: "湖西鄉",
+                baisha: "白沙鄉",
+                wangan: "望安鄉",
+                qimei: "七美鄉"
+            };
+            return names[region];
+        }
+
+        // 初始顯示
+        createChart(currentChartType);
+    </script>
+</body>
+</html>
